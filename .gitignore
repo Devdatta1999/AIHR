@@ -1,0 +1,31 @@
+# Secrets
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# OS / editor
+.DS_Store
+.claude/
+.idea/
+.vscode/
+*.swp
+
+# Local data / uploads (keep dir, ignore contents)
+backend/data/onboarding_docs/*
+!backend/data/onboarding_docs/.gitkeep
+
+# Logs
+*.log
