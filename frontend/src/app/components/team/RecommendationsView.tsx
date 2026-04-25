@@ -4,19 +4,23 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Crown,
   Loader2,
   MapPin,
   Save,
   Sparkles,
   Users,
+  X,
 } from "lucide-react";
 import {
   Candidate,
   CreateTeamPayload,
+  EmployeeSearchResult,
   ProjectRole,
   RecommendationsResponse,
   teamFormationApi,
 } from "../../api/teamFormation";
+import { ProjectManagerPicker } from "./ProjectManagerPicker";
 
 type Selection = Record<string, number[]>; // role designation -> employee_ids
 
@@ -35,6 +39,8 @@ export function RecommendationsView({
   const [selection, setSelection] = useState<Selection>({});
   const [teamName, setTeamName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [manager, setManager] = useState<EmployeeSearchResult | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +94,14 @@ export function RecommendationsView({
     setError(null);
     try {
       const members: CreateTeamPayload["members"] = [];
+      if (manager) {
+        members.push({
+          employee_id: manager.employee_id,
+          role_designation: "Project Manager",
+          fit_score: null,
+          allocation_percent: null,
+        });
+      }
       for (const [roleKey, ids] of Object.entries(selection)) {
         const role = rolesByDesignation[roleKey];
         const candidates = data.recommendations[roleKey] || [];
@@ -182,7 +196,37 @@ export function RecommendationsView({
               placeholder="e.g., Phoenix Customer Portal"
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end items-center gap-2 flex-wrap">
+            {manager ? (
+              <div className="inline-flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg border border-amber-200 bg-amber-50">
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-xs font-medium text-amber-800">
+                  PM:&nbsp;{manager.first_name} {manager.last_name}
+                </span>
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="text-[11px] text-amber-700 hover:text-amber-900 px-1.5"
+                  title="Change manager"
+                >
+                  Change
+                </button>
+                <button
+                  onClick={() => setManager(null)}
+                  className="text-amber-700 hover:text-amber-900 p-1"
+                  title="Remove manager"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setPickerOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-amber-700 border border-amber-300 rounded-lg hover:bg-amber-50 text-sm font-medium"
+              >
+                <Crown className="w-4 h-4" />
+                Add project manager
+              </button>
+            )}
             <button
               disabled={saving || totalSelected === 0 || teamName.trim().length < 2}
               onClick={save}
@@ -203,6 +247,14 @@ export function RecommendationsView({
           </div>
         </div>
       </div>
+
+      {pickerOpen && (
+        <ProjectManagerPicker
+          current={manager}
+          onPick={(e) => setManager(e)}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">

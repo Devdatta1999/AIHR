@@ -1,11 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  Download,
-  FileText,
-  Loader2,
-  Upload,
-} from "lucide-react";
-import { teamFormationApi, SampleFile } from "../../api/teamFormation";
+import { useRef, useState } from "react";
+import { Loader2, Upload } from "lucide-react";
+import { teamFormationApi } from "../../api/teamFormation";
 
 export function UploadPanel({
   onParsed,
@@ -18,15 +13,7 @@ export function UploadPanel({
 }) {
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [samples, setSamples] = useState<SampleFile[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    teamFormationApi
-      .listSamples()
-      .then((r) => setSamples(r.samples))
-      .catch(() => setSamples([]));
-  }, []);
 
   async function handleFile(file: File) {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
@@ -42,22 +29,6 @@ export function UploadPanel({
       setError(e?.message || "Upload failed");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function downloadSample(file: SampleFile) {
-    try {
-      const blob = await teamFormationApi.downloadSample(file.file_name);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.file_name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (e: any) {
-      setError(e?.message || "Download failed");
     }
   }
 
@@ -126,53 +97,6 @@ export function UploadPanel({
           </p>
         )}
       </div>
-
-      {samples.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <FileText className="w-4 h-4 text-indigo-600" />
-            <h4 className="text-sm font-semibold text-gray-900">
-              Sample Project PDFs
-            </h4>
-            <span className="text-[11px] text-gray-500">
-              for demo / testing
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {samples.map((s) => (
-              <div
-                key={s.file_name}
-                className="border border-gray-200 rounded-lg p-3 bg-gray-50/60"
-              >
-                <div className="text-sm font-medium text-gray-800 truncate">
-                  {prettify(s.file_name)}
-                </div>
-                <div className="text-[11px] text-gray-500 mt-0.5">
-                  {(s.size_bytes / 1024).toFixed(0)} KB
-                </div>
-                <button
-                  onClick={() => downloadSample(s)}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-md hover:border-indigo-300 hover:bg-indigo-50/40 text-gray-700"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Download
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="text-[11px] text-gray-500 mt-3">
-            Download one, then drop it back into the panel above to test the
-            full flow.
-          </p>
-        </div>
-      )}
     </div>
   );
-}
-
-function prettify(name: string): string {
-  return name
-    .replace(/\.pdf$/i, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

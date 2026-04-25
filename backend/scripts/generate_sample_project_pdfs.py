@@ -1,4 +1,4 @@
-"""Generate 3 sample Project Requirement PDFs for the Team Formation feature.
+"""Generate sample Project Requirement PDFs for the Team Formation feature.
 
 Run once:
     python -m scripts.generate_sample_project_pdfs
@@ -24,7 +24,7 @@ from reportlab.lib import colors
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "data" / "sample_project_requirements"
 
-# ---- 3 fictional projects, picked to fit Nimbus Labs' real department/skill mix ----
+# ---- fictional projects, picked to fit Nimbus Labs' real department/skill mix ----
 
 PROJECTS = [
     {
@@ -295,6 +295,334 @@ PROJECTS = [
                 "min_experience_years": 3,
                 "responsibilities": (
                     "Stand up the secure inference path, vector DB, and rollout pipeline."
+                ),
+            },
+        ],
+    },
+    {
+        "filename": "helios_mobile_banking.pdf",
+        "name": "Project Helios",
+        "subtitle": "Mobile Banking App — Greenfield Build",
+        "summary": (
+            "Build a greenfield consumer mobile banking app on iOS and Android "
+            "with biometric login, real-time transfers, card controls, and an "
+            "embedded support chatbot. Targets PCI-DSS Level 1 compliance, "
+            "sub-200ms transfer confirmation, and a 4.6+ App Store rating at "
+            "GA. Replaces the legacy white-label vendor app."
+        ),
+        "duration_months": 8,
+        "start": "Q3 FY26",
+        "priority": "Critical",
+        "domain": "FinTech / Mobile",
+        "objectives": [
+            "Ship a native iOS + Android app with shared design system.",
+            "Integrate biometric auth (FaceID, Touch ID, Android BiometricPrompt).",
+            "Roll out instant transfers via the new payments rail.",
+            "Achieve PCI-DSS Level 1 readiness before GA.",
+            "Embed an AI support assistant with strict scope guardrails.",
+        ],
+        "tech_stack": "Swift, Kotlin, React Native, TypeScript, Node.js, GraphQL, AWS (Cognito, AppSync, KMS), Postgres, Datadog",
+        "roles": [
+            {
+                "designation": "Senior Mobile Engineer",
+                "headcount": 2,
+                "level": "L4 / L5",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["Swift", "Kotlin", "React Native", "REST APIs", "System Design"],
+                "good_to_have": ["GraphQL", "Biometric APIs", "App Store / Play Console"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Own mobile architecture across iOS and Android, lead the shared RN "
+                    "module strategy, mentor engineers, and shepherd App Store / Play releases."
+                ),
+            },
+            {
+                "designation": "Software Engineer II",
+                "headcount": 2,
+                "level": "L3",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["TypeScript", "Node.js", "REST APIs", "GraphQL"],
+                "good_to_have": ["AWS AppSync", "Postgres"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Build the BFF, integrate the payments rail, and own the GraphQL contract."
+                ),
+            },
+            {
+                "designation": "Security Engineer",
+                "headcount": 1,
+                "level": "L4",
+                "department": "IT & Security",
+                "allocation": 75,
+                "must_have": ["PCI-DSS", "Threat Modeling", "AWS", "OAuth / OIDC"],
+                "good_to_have": ["SOC 2", "KMS", "Mobile App Security"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Drive PCI-DSS readiness, lead threat modeling, review every "
+                    "auth / payments code path, and own the pen-test response."
+                ),
+            },
+            {
+                "designation": "UX Designer",
+                "headcount": 1,
+                "level": "L3 / L4",
+                "department": "Design",
+                "allocation": 100,
+                "must_have": ["Figma", "Mobile Design", "Design Systems"],
+                "good_to_have": ["Motion Design", "Accessibility"],
+                "min_experience_years": 3,
+                "responsibilities": (
+                    "Lead the mobile design system, run usability tests, and produce "
+                    "Figma specs for every screen and edge state."
+                ),
+            },
+            {
+                "designation": "QA Engineer II",
+                "headcount": 2,
+                "level": "L3",
+                "department": "Quality Assurance",
+                "allocation": 100,
+                "must_have": ["Test Automation", "Appium", "REST APIs"],
+                "good_to_have": ["XCUITest", "Espresso", "Charles Proxy"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Build the cross-platform automation harness and run release-gating "
+                    "regression on physical device farms."
+                ),
+            },
+            {
+                "designation": "Cloud Engineer",
+                "headcount": 1,
+                "level": "L3 / L4",
+                "department": "DevOps & Cloud",
+                "allocation": 75,
+                "must_have": ["AWS", "Terraform", "CI/CD"],
+                "good_to_have": ["Cognito", "KMS", "Datadog"],
+                "min_experience_years": 3,
+                "responsibilities": (
+                    "Provision the AWS footprint, harden IAM/KMS, and run the mobile "
+                    "release pipeline (TestFlight + Play internal tracks)."
+                ),
+            },
+        ],
+    },
+    {
+        "filename": "vega_internal_hr_suite.pdf",
+        "name": "Project Vega",
+        "subtitle": "Internal HR Operations Suite",
+        "summary": (
+            "Replace the patchwork of HR spreadsheets, ServiceNow forms, and "
+            "the legacy SAP module with a single internal HR Operations suite. "
+            "Covers employee lifecycle (offer → onboarding → reviews → exit), "
+            "leave & timesheets, and an HR analytics layer. Built to plug into "
+            "the existing identity and payroll systems."
+        ),
+        "duration_months": 7,
+        "start": "Q3 FY26",
+        "priority": "Medium",
+        "domain": "Internal Tools / HR",
+        "objectives": [
+            "Consolidate 4 disparate HR systems into one internal suite.",
+            "Cut onboarding setup time per hire from 3 days to under 4 hours.",
+            "Provide a self-service portal for leave, timesheets, and reviews.",
+            "Expose a clean HR analytics layer for leadership dashboards.",
+        ],
+        "tech_stack": "Python, FastAPI, React, TypeScript, Postgres, Redis, AWS (ECS, S3, SES), SAP/Workday connectors",
+        "roles": [
+            {
+                "designation": "Senior Software Engineer",
+                "headcount": 1,
+                "level": "L4 / L5",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["Python", "FastAPI", "Postgres", "System Design"],
+                "good_to_have": ["React", "TypeScript", "Workday / SAP integration"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Own the service architecture, define the integration contracts with "
+                    "payroll & identity, and lead the team's technical decisions."
+                ),
+            },
+            {
+                "designation": "Software Engineer II",
+                "headcount": 2,
+                "level": "L3",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["Python", "FastAPI", "REST APIs", "SQL"],
+                "good_to_have": ["React", "TypeScript", "Redis"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Implement domain services (leave, timesheet, review cycle) with tests "
+                    "and documentation; build the React self-service screens."
+                ),
+            },
+            {
+                "designation": "Data Engineer II",
+                "headcount": 1,
+                "level": "L3",
+                "department": "Data Engineering",
+                "allocation": 75,
+                "must_have": ["Python", "SQL", "Airflow"],
+                "good_to_have": ["dbt", "Pandas"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Stand up the HR analytics layer, ETL out of the operational DB, "
+                    "and own the leadership-facing semantic models."
+                ),
+            },
+            {
+                "designation": "UX Designer",
+                "headcount": 1,
+                "level": "L3",
+                "department": "Design",
+                "allocation": 50,
+                "must_have": ["Figma", "Design Systems"],
+                "good_to_have": ["Internal tools UX", "Accessibility"],
+                "min_experience_years": 3,
+                "responsibilities": (
+                    "Design the manager / employee / HR-admin flows and align them "
+                    "with the existing Nimbus design system."
+                ),
+            },
+            {
+                "designation": "QA Engineer II",
+                "headcount": 1,
+                "level": "L3",
+                "department": "Quality Assurance",
+                "allocation": 100,
+                "must_have": ["Test Automation", "REST APIs", "SQL"],
+                "good_to_have": ["Playwright", "Pytest"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Build the regression suite, validate payroll & identity integrations, "
+                    "and run UAT with the HR ops team."
+                ),
+            },
+            {
+                "designation": "HR Business Partner",
+                "headcount": 1,
+                "level": "L4",
+                "department": "HR",
+                "allocation": 50,
+                "must_have": ["HR Operations", "Process Design", "Stakeholder Management"],
+                "good_to_have": ["Workday", "Change Management"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Embed with the build team as the domain SME, codify HR policies "
+                    "into the new system, and lead the change-management rollout."
+                ),
+            },
+        ],
+    },
+    {
+        "filename": "orion_ecommerce_checkout.pdf",
+        "name": "Project Orion",
+        "subtitle": "E-Commerce Checkout Modernization",
+        "summary": (
+            "Modernize the e-commerce checkout for the Nimbus retail platform. "
+            "Move from the monolithic Java checkout to a service-oriented stack "
+            "with a new payment orchestration layer, fraud scoring, and a "
+            "fully redesigned 1-page checkout. Targets a 1.5pp lift in "
+            "conversion and a sub-1.5s p95 checkout latency at peak."
+        ),
+        "duration_months": 6,
+        "start": "Q4 FY26",
+        "priority": "High",
+        "domain": "Retail / Payments",
+        "objectives": [
+            "Replace the Java checkout monolith with focused services.",
+            "Introduce a payment orchestrator with multi-PSP routing.",
+            "Add a real-time fraud score before authorization.",
+            "Lift checkout conversion by 1.5 percentage points.",
+            "Hit p95 < 1.5s end-to-end at Black Friday peak.",
+        ],
+        "tech_stack": "Go, TypeScript, React, Node.js, Kafka, Redis, Postgres, Stripe, Adyen, AWS (EKS, ALB), Datadog",
+        "roles": [
+            {
+                "designation": "Senior Software Engineer",
+                "headcount": 2,
+                "level": "L4 / L5",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["Go", "Microservices", "REST APIs", "System Design"],
+                "good_to_have": ["Kafka", "Payments / PSP integration"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Design the payment orchestrator, lead the strangler-fig migration "
+                    "off the Java monolith, and run on-call for the new services."
+                ),
+            },
+            {
+                "designation": "Software Engineer II",
+                "headcount": 2,
+                "level": "L3",
+                "department": "Software Engineering",
+                "allocation": 100,
+                "must_have": ["TypeScript", "React", "REST APIs"],
+                "good_to_have": ["Node.js", "Next.js"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Build the new 1-page checkout UI, instrument funnel analytics, "
+                    "and integrate with the orchestrator."
+                ),
+            },
+            {
+                "designation": "ML Engineer",
+                "headcount": 1,
+                "level": "L3 / L4",
+                "department": "AI/ML",
+                "allocation": 75,
+                "must_have": ["Python", "SQL", "Feature Engineering"],
+                "good_to_have": ["XGBoost", "Real-time inference", "Fraud detection"],
+                "min_experience_years": 3,
+                "responsibilities": (
+                    "Build and deploy the real-time fraud scoring model, including "
+                    "the feature pipeline and shadow-mode evaluation harness."
+                ),
+            },
+            {
+                "designation": "UX Designer",
+                "headcount": 1,
+                "level": "L3 / L4",
+                "department": "Design",
+                "allocation": 75,
+                "must_have": ["Figma", "Conversion Optimization", "Design Systems"],
+                "good_to_have": ["A/B testing", "Accessibility"],
+                "min_experience_years": 3,
+                "responsibilities": (
+                    "Lead checkout redesign, run A/B tests, and codify the patterns "
+                    "into the retail design system."
+                ),
+            },
+            {
+                "designation": "QA Engineer II",
+                "headcount": 2,
+                "level": "L3",
+                "department": "Quality Assurance",
+                "allocation": 100,
+                "must_have": ["Test Automation", "REST APIs", "Playwright"],
+                "good_to_have": ["Performance testing", "k6 / JMeter"],
+                "min_experience_years": 2,
+                "responsibilities": (
+                    "Build E2E and load-test suites for the checkout path; gate every "
+                    "release on payment + fraud scenarios."
+                ),
+            },
+            {
+                "designation": "Cloud Engineer",
+                "headcount": 1,
+                "level": "L4",
+                "department": "DevOps & Cloud",
+                "allocation": 75,
+                "must_have": ["AWS", "Kubernetes", "Terraform", "CI/CD"],
+                "good_to_have": ["Service Mesh", "Datadog"],
+                "min_experience_years": 5,
+                "responsibilities": (
+                    "Stand up the EKS footprint, design canary/blue-green rollouts, "
+                    "and lead the peak-readiness drill before Black Friday."
                 ),
             },
         ],

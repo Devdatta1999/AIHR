@@ -26,8 +26,10 @@ from fastapi import (
     Depends,
     File,
     HTTPException,
+    Query,
     UploadFile,
 )
+from db import get_conn
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -50,6 +52,69 @@ def _hr(identity=Depends(auth_svc.current_identity)):
 
 def _email(identity: dict[str, Any]) -> Optional[str]:
     return (identity or {}).get("email")
+
+
+# ============================================================
+# Employee search (used by the "Add project manager" picker)
+# ============================================================
+
+@router.get("/employees/search")
+def search_employees(
+    q: Optional[str] = Query(None, description="name or email substring"),
+    department: Optional[str] = Query(None),
+    work_mode: Optional[str] = Query(None),
+    min_bandwidth: Optional[float] = Query(None, ge=0, le=100),
+    limit: int = Query(20, ge=1, le=100),
+    _=Depends(_hr),
+):
+    """Free-text + facet search over the canonical HR roster.
+
+    Used by the team-formation "Add project manager" picker. Active employees
+    only, sorted by bandwidth then experience so the most-available manager
+    candidates surface first.
+    """
+    conds = ["e.status = 'Active'", "e.exit_date IS NULL"]
+    params: list[Any] = []
+    if q:
+        conds.append(
+            "(e.first_name ILIKE %s OR e.last_name ILIKE %s OR e.email ILIKE %s "
+            "OR (e.first_name || ' ' || e.last_name) ILIKE %s OR e.job_title ILIKE %s)"
+        )
+        like = f"%{q.strip()}%"
+        params.extend([like, like, like, like, like])
+    if department:
+        conds.append("e.department_name = %s")
+        params.append(department)
+    if work_mode:
+        conds.append("e.work_mode = %s")
+        params.append(work_mode)
+    if min_bandwidth is not None:
+        conds.append("e.bandwidth_percent >= %s")
+        params.append(min_bandwidth)
+
+    sql = f"""
+        SELECT e.employee_id, e.employee_code, e.first_name, e.last_name,
+               e.email, e.job_title, e.employee_level, e.department_name,
+               e.location, e.work_mode, e.bandwidth_percent,
+               e.total_experience_years, e.current_project_count
+        FROM employees.employees e
+        WHERE {' AND '.join(conds)}
+        ORDER BY e.bandwidth_percent DESC NULLS LAST,
+                 e.total_experience_years DESC NULLS LAST,
+                 e.first_name
+        LIMIT %s
+    """
+    params.append(limit)
+    with get_conn() as conn:
+        rows = conn.execute(sql, tuple(params)).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        for k in ("bandwidth_percent", "total_experience_years"):
+            if d.get(k) is not None:
+                d[k] = float(d[k])
+        out.append(d)
+    return {"employees": out}
 
 
 # ============================================================

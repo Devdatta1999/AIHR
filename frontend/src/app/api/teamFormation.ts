@@ -163,6 +163,30 @@ export type CreateTeamPayload = {
   requirements?: ParsedRequirements;
 };
 
+export type EmployeeSearchResult = {
+  employee_id: number;
+  employee_code: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  job_title: string;
+  employee_level: string | null;
+  department_name: string | null;
+  location: string | null;
+  work_mode: string | null;
+  bandwidth_percent: number;
+  total_experience_years: number;
+  current_project_count: number | null;
+};
+
+export type EmployeeSearchFilters = {
+  q?: string;
+  department?: string;
+  work_mode?: string;
+  min_bandwidth?: number;
+  limit?: number;
+};
+
 // ---------------- API ----------------
 
 export const teamFormationApi = {
@@ -214,6 +238,20 @@ export const teamFormationApi = {
 
   getTeam: (teamId: number) =>
     jsonRequest<TeamDetail>(`/team-formation/teams/${teamId}`),
+
+  searchEmployees: (filters: EmployeeSearchFilters = {}) => {
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.department) params.set("department", filters.department);
+    if (filters.work_mode) params.set("work_mode", filters.work_mode);
+    if (filters.min_bandwidth != null)
+      params.set("min_bandwidth", String(filters.min_bandwidth));
+    if (filters.limit) params.set("limit", String(filters.limit));
+    const qs = params.toString();
+    return jsonRequest<{ employees: EmployeeSearchResult[] }>(
+      `/team-formation/employees/search${qs ? `?${qs}` : ""}`,
+    );
+  },
 
   // Authenticated download for a sample PDF (server requires bearer).
   downloadSample: async (fileName: string): Promise<Blob> => {
