@@ -6,6 +6,15 @@ load_dotenv(override=True)
 SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
 HF_MODEL_ID = os.getenv("HF_MODEL_ID", "meta-llama/Llama-3.1-8B-Instruct")
+# Larger model used by the HR-Analytics chatbot for accurate NL→SQL.
+# Falls back to HF_MODEL_ID if not set.
+HF_ANALYTICS_MODEL_ID = os.getenv(
+    "HF_ANALYTICS_MODEL_ID", "meta-llama/Llama-3.3-70B-Instruct"
+)
+# Semantic-cache hit threshold (0–1, cosine). 0.70 = "near-paraphrase".
+ANALYTICS_CACHE_THRESHOLD = float(os.getenv("ANALYTICS_CACHE_THRESHOLD", "0.70"))
+# Min relevance for a RAG hit to be flagged as "used custom knowledge".
+ANALYTICS_RAG_HIT_THRESHOLD = float(os.getenv("ANALYTICS_RAG_HIT_THRESHOLD", "0.45"))
 CORS_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
