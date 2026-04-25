@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   CalendarDays,
+  FolderKanban,
   Video,
   LogOut,
   Sparkles,
@@ -34,6 +35,12 @@ const nav: (NavLeaf | NavGroup)[] = [
     name: "Onboarding",
     icon: ClipboardCheck,
     path: "/employee/onboarding",
+  },
+  {
+    kind: "leaf",
+    name: "My Projects",
+    icon: FolderKanban,
+    path: "/employee/projects",
   },
   {
     kind: "group",

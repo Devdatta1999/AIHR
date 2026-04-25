@@ -188,6 +188,53 @@ export const employeeApi = {
   listKits: () => request<any[]>("/employee/interview-kits"),
   listUpcomingInterviews: () =>
     request<UpcomingInterview[]>("/employee/interviews/upcoming"),
+  listProjects: () =>
+    request<{ staff_employee_id: number; projects: MyProject[] }>(
+      "/employee/projects",
+    ),
+};
+
+export type ProjectManager = {
+  employee_id: number;
+  first_name: string | null;
+  last_name: string | null;
+  job_title: string | null;
+  email: string | null;
+};
+
+export type Teammate = {
+  employee_id: number;
+  employee_code: string | null;
+  first_name: string;
+  last_name: string;
+  job_title: string;
+  employee_level: string | null;
+  department_name: string | null;
+  email: string | null;
+  location: string | null;
+  work_mode: string | null;
+  role_in_project: string;
+  allocation_percent: number | null;
+  assignment_status: string;
+};
+
+export type MyProject = {
+  employee_project_id: number;
+  project_id: number;
+  role_in_project: string;
+  allocation_percent: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  assignment_status: "Active" | "Planned" | "Completed" | string;
+  project_name: string;
+  description: string | null;
+  priority: string | null;
+  project_status: "Active" | "Planned" | "Completed" | "On Hold" | string;
+  project_start_date: string | null;
+  project_end_date: string | null;
+  required_bandwidth_percent: number | null;
+  manager: ProjectManager | null;
+  teammates: Teammate[];
 };
 
 export type UpcomingInterview = {

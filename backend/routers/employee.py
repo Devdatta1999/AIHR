@@ -211,6 +211,103 @@ def list_upcoming_interviews(identity=Depends(_identity)):
 
 # ---------- interview kits ----------
 
+# ---------- my projects ----------
+
+def _staff_employee_id(identity: dict[str, Any]) -> int:
+    """Resolve the canonical HR roster id for the signed-in portal user."""
+    email = (identity.get("email") or "").lower()
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT staff_employee_id FROM applicants.employees WHERE LOWER(email) = %s",
+            (email,),
+        ).fetchone()
+    sid = (row or {}).get("staff_employee_id")
+    if not sid:
+        raise HTTPException(404, "no staff record linked to this account yet")
+    return int(sid)
+
+
+@router.get("/projects")
+def list_my_projects(identity=Depends(_identity)):
+    """Active and recent projects for the signed-in employee, with teammates."""
+    sid = _staff_employee_id(identity)
+    sql_assignments = """
+        SELECT ep.employee_project_id, ep.project_id, ep.role_in_project,
+               ep.allocation_percent, ep.start_date, ep.end_date,
+               ep.assignment_status,
+               p.project_name, p.description, p.priority, p.project_status,
+               p.start_date AS project_start_date,
+               p.end_date   AS project_end_date,
+               p.required_bandwidth_percent,
+               mgr.employee_id AS manager_employee_id,
+               mgr.first_name  AS manager_first_name,
+               mgr.last_name   AS manager_last_name,
+               mgr.job_title   AS manager_job_title,
+               mgr.email       AS manager_email
+        FROM employees.employee_projects ep
+        JOIN employees.projects p ON p.project_id = ep.project_id
+        LEFT JOIN employees.employees mgr ON mgr.employee_id = p.project_manager_id
+        WHERE ep.employee_id = %s
+          AND ep.assignment_status IN ('Active', 'Planned', 'Completed')
+        ORDER BY
+            CASE ep.assignment_status WHEN 'Active' THEN 0 WHEN 'Planned' THEN 1 ELSE 2 END,
+            COALESCE(ep.start_date, p.start_date) DESC
+    """
+    sql_teammates = """
+        SELECT ep.project_id, ep.role_in_project, ep.allocation_percent,
+               ep.assignment_status,
+               e.employee_id, e.employee_code, e.first_name, e.last_name,
+               e.job_title, e.employee_level, e.department_name,
+               e.email, e.location, e.work_mode
+        FROM employees.employee_projects ep
+        JOIN employees.employees e ON e.employee_id = ep.employee_id
+        WHERE ep.project_id = ANY(%s)
+          AND ep.employee_id <> %s
+          AND ep.assignment_status = 'Active'
+        ORDER BY ep.project_id, e.first_name
+    """
+    with get_conn() as conn:
+        assignments = conn.execute(sql_assignments, (sid,)).fetchall()
+        project_ids = [a["project_id"] for a in assignments]
+        teammates = (
+            conn.execute(sql_teammates, (project_ids, sid)).fetchall()
+            if project_ids else []
+        )
+
+    by_project: dict[int, list[dict[str, Any]]] = {}
+    for t in teammates:
+        pid = t.pop("project_id")
+        by_project.setdefault(pid, []).append(t)
+
+    projects: list[dict[str, Any]] = []
+    for a in assignments:
+        for k in ("start_date", "end_date", "project_start_date", "project_end_date"):
+            if a.get(k):
+                a[k] = a[k].isoformat()
+        if a.get("allocation_percent") is not None:
+            a["allocation_percent"] = float(a["allocation_percent"])
+        if a.get("required_bandwidth_percent") is not None:
+            a["required_bandwidth_percent"] = float(a["required_bandwidth_percent"])
+        manager = None
+        if a.get("manager_employee_id"):
+            manager = {
+                "employee_id": a.pop("manager_employee_id"),
+                "first_name": a.pop("manager_first_name", None),
+                "last_name": a.pop("manager_last_name", None),
+                "job_title": a.pop("manager_job_title", None),
+                "email": a.pop("manager_email", None),
+            }
+        else:
+            for k in ("manager_employee_id", "manager_first_name",
+                      "manager_last_name", "manager_job_title", "manager_email"):
+                a.pop(k, None)
+        a["manager"] = manager
+        a["teammates"] = by_project.get(a["project_id"], [])
+        projects.append(a)
+
+    return {"staff_employee_id": sid, "projects": projects}
+
+
 @router.get("/interview-kits")
 def list_kits(identity=Depends(_identity)):
     email = (identity.get("email") or "").lower()
