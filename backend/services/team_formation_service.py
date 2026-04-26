@@ -410,6 +410,86 @@ def evaluations_for_run(run_id: int) -> list[dict[str, Any]]:
 # 4. Teams
 # ============================================================
 
+def _is_project_manager_role(role: Optional[str]) -> bool:
+    if not role:
+        return False
+    r = role.strip().lower()
+    return r in {"project manager", "pm", "engineering manager", "program manager"}
+
+
+def _mirror_team_to_canonical(
+    conn,
+    *,
+    team_id: int,
+    project_name: str,
+    project_summary: Optional[str],
+    members: list[dict[str, Any]],
+) -> int:
+    """Create a row in employees.projects + per-member employees.employee_projects
+    so the team is visible in the canonical roster (Compensation, Employee
+    Portal "My Projects", etc.). Returns the new project_id.
+
+    Idempotent at the team level — if applicants.teams already has a project_id,
+    we update that row instead of inserting a new one.
+    """
+    pm_id: Optional[int] = next(
+        (int(m["employee_id"]) for m in members if _is_project_manager_role(m.get("role_designation"))),
+        None,
+    )
+
+    existing = conn.execute(
+        "SELECT project_id FROM applicants.teams WHERE team_id = %s",
+        (team_id,),
+    ).fetchone()
+    project_id = (existing or {}).get("project_id")
+
+    if project_id:
+        conn.execute(
+            """UPDATE employees.projects
+               SET project_name = %s,
+                   description = %s,
+                   project_manager_id = %s,
+                   project_status = 'Active'
+               WHERE project_id = %s""",
+            (project_name, project_summary, pm_id, project_id),
+        )
+        # rebuild the assignments — simplest correct path
+        conn.execute(
+            "DELETE FROM employees.employee_projects WHERE project_id = %s",
+            (project_id,),
+        )
+    else:
+        row = conn.execute(
+            """INSERT INTO employees.projects
+                (project_name, description, project_manager_id,
+                 project_status, start_date)
+               VALUES (%s, %s, %s, 'Active', CURRENT_DATE)
+               RETURNING project_id""",
+            (project_name, project_summary, pm_id),
+        ).fetchone()
+        project_id = int(row["project_id"])
+        conn.execute(
+            "UPDATE applicants.teams SET project_id = %s WHERE team_id = %s",
+            (project_id, team_id),
+        )
+
+    for m in members:
+        alloc = m.get("allocation_percent")
+        # employee_projects.allocation_percent is NOT NULL; PMs default to 100.
+        if alloc is None:
+            alloc = 100
+        conn.execute(
+            """INSERT INTO employees.employee_projects
+                (employee_id, project_id, role_in_project,
+                 allocation_percent, start_date, assignment_status)
+               VALUES (%s, %s, %s, %s, CURRENT_DATE, 'Active')""",
+            (int(m["employee_id"]), project_id,
+             m.get("role_designation"), alloc),
+        )
+
+    return int(project_id)
+
+
 def create_team(
     *,
     team_name: str,
@@ -447,6 +527,18 @@ def create_team(
                 "UPDATE applicants.team_formation_runs SET status='team_created', updated_at=NOW() WHERE run_id=%s",
                 (run_id,),
             )
+
+        # Mirror into the canonical employees.projects so that everyone on
+        # the team — including the Project Manager — sees the project in
+        # their Employee Portal "My Projects" view.
+        _mirror_team_to_canonical(
+            conn,
+            team_id=team_id,
+            project_name=project_name or team_name,
+            project_summary=project_summary,
+            members=members,
+        )
+
         conn.commit()
     return _row(team)
 
