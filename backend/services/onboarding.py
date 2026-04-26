@@ -227,6 +227,130 @@ def update_profile(applicant_id: int, fields: dict[str, Any]) -> None:
         conn.commit()
 
 
+# Map a job-posting department → canonical employees.employees.department_name.
+# Only well-known aliases; anything else falls through to NULL.
+_CANONICAL_DEPT_ALIASES = {
+    "data platform": "Data Engineering",
+    "data": "Data Engineering",
+    "data engineering": "Data Engineering",
+    "ml": "AI/ML",
+    "ai": "AI/ML",
+    "ai/ml": "AI/ML",
+    "machine learning": "AI/ML",
+    "engineering": "Software Engineering",
+    "software engineering": "Software Engineering",
+    "swe": "Software Engineering",
+    "frontend": "Software Engineering",
+    "backend": "Software Engineering",
+    "platform": "DevOps & Cloud",
+    "devops": "DevOps & Cloud",
+    "devops & cloud": "DevOps & Cloud",
+    "cloud": "DevOps & Cloud",
+    "sre": "DevOps & Cloud",
+    "design": "Design",
+    "ux": "Design",
+    "product": "Product Management",
+    "product management": "Product Management",
+    "pm": "Product Management",
+    "qa": "Quality Assurance",
+    "quality assurance": "Quality Assurance",
+    "security": "IT & Security",
+    "it": "IT & Security",
+    "it & security": "IT & Security",
+    "hr": "HR",
+    "people": "HR",
+    "sales": "Sales & Operations",
+    "operations": "Sales & Operations",
+    "sales & operations": "Sales & Operations",
+}
+
+
+def _map_canonical_department(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    return _CANONICAL_DEPT_ALIASES.get(raw.strip().lower())
+
+
+def _split_location(raw: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    """`Seattle, WA` → ('Seattle', 'WA'); `Remote` → ('Remote', None)."""
+    if not raw:
+        return None, None
+    parts = [p.strip() for p in raw.split(",")]
+    if len(parts) >= 2:
+        return parts[0] or None, parts[1] or None
+    return parts[0] or None, None
+
+
+def _create_canonical_employee_row(
+    conn,
+    *,
+    applicant: dict[str, Any],
+    base_salary: Optional[Any],
+    currency: Optional[str],
+    start_date: Optional[date],
+) -> Optional[int]:
+    """Insert a row into employees.employees so the new hire is part of the
+    canonical HR roster (used by Compensation, Team Formation, etc.).
+    Returns the new employee_id, or None if a row with this email already exists.
+    """
+    email = applicant.get("email")
+    if not email:
+        return None
+
+    existing = conn.execute(
+        "SELECT employee_id FROM employees.employees WHERE LOWER(email) = LOWER(%s)",
+        (email,),
+    ).fetchone()
+    if existing:
+        return existing["employee_id"]
+
+    city, state = _split_location(applicant.get("location"))
+    join_date = start_date or date.today()
+    dept = _map_canonical_department(applicant.get("department"))
+
+    # employee_code must be unique + non-null. Use a placeholder, then patch
+    # to EMP{id} after we know the serial value.
+    placeholder_code = f"NEW-{uuid.uuid4().hex[:10].upper()}"
+
+    row = conn.execute(
+        """
+        INSERT INTO employees.employees
+          (employee_code, first_name, last_name, email,
+           job_title, employment_type, location, city, state, country,
+           department_name, join_date, total_experience_years,
+           base_salary, currency, status, payroll_status)
+        VALUES (%s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, 'Active', 'Active')
+        RETURNING employee_id
+        """,
+        (
+            placeholder_code,
+            applicant["first_name"],
+            applicant["last_name"],
+            email,
+            applicant.get("job_title") or "Employee",
+            applicant.get("employment_type"),
+            applicant.get("location"),
+            city,
+            state,
+            applicant.get("country"),
+            dept,
+            join_date,
+            applicant.get("total_years_experience"),
+            base_salary,
+            currency or "USD",
+        ),
+    ).fetchone()
+    new_id = row["employee_id"]
+    conn.execute(
+        "UPDATE employees.employees SET employee_code = %s WHERE employee_id = %s",
+        (f"EMP{new_id}", new_id),
+    )
+    return new_id
+
+
 def accept_onboarding(applicant_id: int) -> dict[str, Any]:
     """Employee accepts — create employee row, flip statuses, return employee."""
     with get_conn() as conn:
@@ -245,21 +369,36 @@ def accept_onboarding(applicant_id: int) -> dict[str, Any]:
 
         offer = conn.execute(
             """
-            SELECT start_date FROM applicants.offer_letters
+            SELECT start_date, base_salary, currency
+            FROM applicants.offer_letters
             WHERE applicant_id = %s AND response = 'accepted'
             ORDER BY responded_at DESC LIMIT 1
             """,
             (applicant_id,),
         ).fetchone()
         start_date: Optional[date] = (offer or {}).get("start_date")
+        base_salary = (offer or {}).get("base_salary")
+        currency = (offer or {}).get("currency")
 
+        # 1) Insert into the canonical HR roster so this person shows up in
+        #    Compensation, Team Formation, etc. Idempotent on email.
+        staff_employee_id = _create_canonical_employee_row(
+            conn,
+            applicant=applicant,
+            base_salary=base_salary,
+            currency=currency,
+            start_date=start_date,
+        )
+
+        # 2) Insert / upsert the portal-login row, pointing at the canonical
+        #    record via staff_employee_id.
         employee = conn.execute(
             """
             INSERT INTO applicants.employees
               (applicant_id, first_name, last_name, email, password_hash,
                job_title, department, location, country, employment_type,
-               start_date, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
+               start_date, status, staff_employee_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', %s)
             ON CONFLICT (email) DO UPDATE SET
               applicant_id = EXCLUDED.applicant_id,
               password_hash = EXCLUDED.password_hash,
@@ -270,8 +409,9 @@ def accept_onboarding(applicant_id: int) -> dict[str, Any]:
               employment_type = EXCLUDED.employment_type,
               start_date = EXCLUDED.start_date,
               status = 'active',
+              staff_employee_id = COALESCE(EXCLUDED.staff_employee_id, applicants.employees.staff_employee_id),
               onboarded_at = NOW()
-            RETURNING employee_id, email
+            RETURNING employee_id, email, staff_employee_id
             """,
             (
                 applicant["applicant_id"],
@@ -285,6 +425,7 @@ def accept_onboarding(applicant_id: int) -> dict[str, Any]:
                 applicant.get("country"),
                 applicant.get("employment_type"),
                 start_date,
+                staff_employee_id,
             ),
         ).fetchone()
 
@@ -321,11 +462,38 @@ def reset_onboarding(applicant_id: int) -> dict[str, Any]:
         if not applicant:
             raise ValueError(f"applicant {applicant_id} not found")
 
-        # 1) employees row (matched by applicant_id OR email — covers either upsert path)
+        # 1a) Look up the canonical staff_employee_id (if any) BEFORE we drop the
+        #     portal row, so we can clean up payslips + the canonical row too.
+        portal_row = conn.execute(
+            "SELECT staff_employee_id FROM applicants.employees "
+            "WHERE applicant_id = %s OR email = %s",
+            (applicant_id, applicant["email"]),
+        ).fetchone()
+        staff_employee_id = (portal_row or {}).get("staff_employee_id")
+
+        # 1b) Wipe any payslips this person has accumulated.
+        conn.execute(
+            "DELETE FROM applicants.payroll_runs "
+            "WHERE LOWER(employee_email) = LOWER(%s) "
+            "   OR (%s::bigint IS NOT NULL AND staff_employee_id = %s)",
+            (applicant["email"], staff_employee_id, staff_employee_id),
+        )
+
+        # 1c) Drop the portal-login row (matched by applicant_id OR email).
         conn.execute(
             "DELETE FROM applicants.employees WHERE applicant_id = %s OR email = %s",
             (applicant_id, applicant["email"]),
         )
+
+        # 1d) Drop the canonical employees.employees row we created at accept time.
+        #     Match by email AND id — we don't want to wipe a seeded directory
+        #     entry that just happens to share the email of a re-bound applicant.
+        if staff_employee_id is not None:
+            conn.execute(
+                "DELETE FROM employees.employees "
+                "WHERE employee_id = %s AND LOWER(email) = LOWER(%s)",
+                (staff_employee_id, applicant["email"]),
+            )
         # 2) tracker
         conn.execute(
             "DELETE FROM applicants.onboarding_trackers WHERE applicant_id = %s",

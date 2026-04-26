@@ -6,6 +6,7 @@ import {
   ClipboardList,
   CalendarDays,
   FolderKanban,
+  Receipt,
   Video,
   LogOut,
   Sparkles,
@@ -41,6 +42,12 @@ const nav: (NavLeaf | NavGroup)[] = [
     name: "My Projects",
     icon: FolderKanban,
     path: "/employee/projects",
+  },
+  {
+    kind: "leaf",
+    name: "Payslips",
+    icon: Receipt,
+    path: "/employee/payslips",
   },
   {
     kind: "group",

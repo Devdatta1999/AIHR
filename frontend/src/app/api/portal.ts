@@ -192,6 +192,55 @@ export const employeeApi = {
     request<{ staff_employee_id: number; projects: MyProject[] }>(
       "/employee/projects",
     ),
+  listPayslips: () =>
+    request<{ staff_employee_id: number; summary: PayslipSummary; payslips: PortalPayslip[] }>(
+      "/employee/payslips",
+    ),
+  getPayslip: (run_id: number) =>
+    request<PortalPayslip>(`/employee/payslips/${run_id}`),
+  payslipPdfUrl: (run_id: number) => `${BASE}/employee/payslips/${run_id}/pdf`,
+  downloadPayslipPdf: async (run_id: number) => {
+    const res = await fetch(`${BASE}/employee/payslips/${run_id}/pdf`, {
+      headers: { ...authHeader() },
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    return res.blob();
+  },
+};
+
+export type PayslipLineItem = { label: string; amount: number };
+
+export type PortalPayslip = {
+  payroll_run_id: number;
+  staff_employee_id: number;
+  pay_period_year: number;
+  pay_period_month: number;
+  pay_period_label: string;
+  period_start: string | null;
+  period_end: string | null;
+  pay_date: string | null;
+  currency: string;
+  annual_base_salary: number | null;
+  monthly_gross: number | null;
+  earnings: PayslipLineItem[];
+  deductions: PayslipLineItem[];
+  total_earnings: number | null;
+  total_deductions: number | null;
+  net_pay: number | null;
+  ytd_gross: number | null;
+  ytd_tax: number | null;
+  ytd_net: number | null;
+  status: string;
+  released_at: string | null;
+};
+
+export type PayslipSummary = {
+  ytd_gross: number;
+  ytd_tax: number;
+  ytd_net: number;
+  last_pay_date: string | null;
+  last_pay_period_label: string | null;
+  count: number;
 };
 
 export type ProjectManager = {

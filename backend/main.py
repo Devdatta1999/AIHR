@@ -5,7 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import CORS_ORIGINS
 from db import close_pool
-from routers import analytics, auth, employee, hiring, interview_kit, onboarding, team_formation
+from routers import (
+    analytics,
+    auth,
+    compensation,
+    employee,
+    hiring,
+    interview_kit,
+    onboarding,
+    team_formation,
+)
 
 
 @asynccontextmanager
@@ -31,6 +40,7 @@ app.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 app.include_router(employee.router, prefix="/employee", tags=["employee"])
 app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 app.include_router(team_formation.router, prefix="/team-formation", tags=["team-formation"])
+app.include_router(compensation.router, prefix="/compensation", tags=["compensation"])
 
 
 @app.get("/health")

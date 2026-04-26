@@ -1,14 +1,16 @@
-"""Employee-portal endpoints: offer, onboarding, interview kits."""
+"""Employee-portal endpoints: offer, onboarding, interview kits, payslips."""
 from __future__ import annotations
 
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
 from db import get_conn
 from services import auth as auth_svc
 from services import onboarding as ob
+from services import payroll as pr
+from services.payslip_pdf import render_payslip_pdf
 
 router = APIRouter()
 
@@ -306,6 +308,77 @@ def list_my_projects(identity=Depends(_identity)):
         projects.append(a)
 
     return {"staff_employee_id": sid, "projects": projects}
+
+
+# ---------- payslips ----------
+
+@router.get("/payslips")
+def list_my_payslips(identity=Depends(_identity)):
+    """All released payslips for the signed-in employee, newest first.
+
+    Also returns a small summary block (YTD + last pay date) so the portal
+    can render its top stats without a second round trip.
+    """
+    sid = _staff_employee_id(identity)
+    payslips = pr.list_payslips_for_employee(sid)
+
+    summary: dict[str, Any] = {
+        "ytd_gross": 0.0,
+        "ytd_tax": 0.0,
+        "ytd_net": 0.0,
+        "last_pay_date": None,
+        "last_pay_period_label": None,
+        "count": len(payslips),
+    }
+    if payslips:
+        # Take YTD from the most recent run within the latest year.
+        latest_year = payslips[0]["pay_period_year"]
+        for p in payslips:
+            if p["pay_period_year"] == latest_year:
+                summary["ytd_gross"] = p.get("ytd_gross") or 0.0
+                summary["ytd_tax"] = p.get("ytd_tax") or 0.0
+                summary["ytd_net"] = p.get("ytd_net") or 0.0
+                summary["last_pay_date"] = p.get("pay_date")
+                summary["last_pay_period_label"] = p.get("pay_period_label")
+                break
+    return {
+        "staff_employee_id": sid,
+        "summary": summary,
+        "payslips": payslips,
+    }
+
+
+@router.get("/payslips/{run_id}")
+def get_my_payslip(run_id: int, identity=Depends(_identity)):
+    sid = _staff_employee_id(identity)
+    p = pr.get_payslip(run_id)
+    if not p or p["staff_employee_id"] != sid:
+        raise HTTPException(404, "payslip not found")
+    return p
+
+
+@router.get("/payslips/{run_id}/pdf")
+def download_my_payslip(run_id: int, identity=Depends(_identity)):
+    sid = _staff_employee_id(identity)
+    p = pr.get_payslip(run_id)
+    if not p or p["staff_employee_id"] != sid:
+        raise HTTPException(404, "payslip not found")
+    with get_conn() as conn:
+        emp = conn.execute(
+            """
+            SELECT employee_id, employee_code, first_name, last_name, email,
+                   job_title, department_name, location
+            FROM employees.employees WHERE employee_id = %s
+            """,
+            (sid,),
+        ).fetchone()
+    pdf_bytes = render_payslip_pdf(p, employee=dict(emp) if emp else None)
+    fname = f"payslip-{p['pay_period_year']}-{p['pay_period_month']:02d}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
 
 
 @router.get("/interview-kits")
