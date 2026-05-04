@@ -15,7 +15,6 @@ import {
   FolderKanban,
   Loader2,
   MessageCircleQuestion,
-  RefreshCw,
   Sparkles,
   TrendingUp,
   UserPlus,
@@ -26,6 +25,7 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   Pie,
   PieChart,
@@ -415,8 +415,9 @@ export function Dashboard() {
         <div className="pointer-events-none absolute -top-20 -right-16 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-10 w-72 h-72 rounded-full bg-fuchsia-300/20 blur-3xl" />
 
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
-          <div>
+        <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          {/* Left: greeting */}
+          <div className="lg:col-span-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur text-xs font-medium mb-3">
               <Sparkles className="w-3.5 h-3.5" />
               <span>{period.label} · Live</span>
@@ -425,36 +426,46 @@ export function Dashboard() {
               {greeting(new Date())}, {firstName(identity?.name || "HR Admin")}.
             </h1>
             <p className="text-white/80 mt-2 text-sm md:text-base max-w-xl leading-relaxed">
-              Here's what's happening across Nimbus Labs today — staffing, hiring,
-              payroll, and the things that need your attention.
+              Here's your daily briefing for Nimbus Labs — the headline insight is
+              ready below, plus the things that need your attention today.
             </p>
+
+            <div className="mt-5">
+              <Link
+                to="/analytics"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-indigo-700 hover:bg-white/90 transition-colors text-sm font-semibold shadow-sm"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Open analytics
+              </Link>
+            </div>
           </div>
 
-          <button
-            onClick={load}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur transition-colors text-sm font-medium"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-
-        {/* Inline hero stats */}
-        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-7">
-          {[
-            { label: "Active employees", value: tiles.active_headcount.toLocaleString() },
-            { label: "Open roles", value: tiles.open_jobs.toString() },
-            { label: "Active projects", value: tiles.active_projects.toString() },
-            {
-              label: "Released this period",
-              value: fmtMoney(tiles.released_gross_this_period),
-            },
-          ].map((s) => (
-            <div key={s.label}>
-              <p className="text-xs uppercase tracking-wider text-white/70">{s.label}</p>
-              <p className="text-2xl md:text-3xl font-semibold mt-0.5">{s.value}</p>
-            </div>
-          ))}
+          {/* Right: featured AI insight card (glassmorphism on the gradient) */}
+          <div className="lg:col-span-2">
+            {insights.length > 0 ? (
+              <div className="rounded-2xl bg-white/12 backdrop-blur-md border border-white/20 p-5 shadow-lg shadow-black/5">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-white/80 mb-3">
+                  <span className="inline-flex w-6 h-6 rounded-md items-center justify-center bg-white/20">
+                    <Bot className="w-3.5 h-3.5" />
+                  </span>
+                  Today's headline
+                </div>
+                <p className="text-base font-semibold leading-snug mb-1.5">
+                  {insights[0].title}
+                </p>
+                <p className="text-sm text-white/85 leading-relaxed">
+                  {insights[0].body}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-5">
+                <p className="text-sm text-white/85">
+                  No flags from the AI agent today — everything looks healthy.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -528,35 +539,51 @@ export function Dashboard() {
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart
               data={data.headcount_trend}
-              margin={{ top: 5, right: 16, left: 0, bottom: 0 }}
+              margin={{ top: 12, right: 16, left: 0, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="hc-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                <linearGradient id="hc-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
+                  <stop offset="60%" stopColor="#8b5cf6" stopOpacity={0.18} />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id="hc-stroke" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#a855f7" />
                 </linearGradient>
               </defs>
+              <CartesianGrid
+                strokeDasharray="3 6"
+                stroke="#eef2f7"
+                vertical={false}
+              />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 11, fill: "#9ca3af" }}
                 tickLine={false}
                 axisLine={false}
+                tickMargin={8}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: "#9ca3af" }}
                 tickLine={false}
                 axisLine={false}
                 width={40}
+                domain={["dataMin - 8", "dataMax + 8"]}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#e5e7eb" }} />
+              <Tooltip
+                content={<ChartTooltip />}
+                cursor={{ stroke: "#c7d2fe", strokeWidth: 1, strokeDasharray: "4 4" }}
+              />
               <Area
                 type="monotone"
                 dataKey="headcount"
                 name="Headcount"
-                stroke="#6366f1"
-                strokeWidth={2.5}
-                fill="url(#hc-grad)"
-                activeDot={{ r: 5, fill: "#6366f1", stroke: "white", strokeWidth: 2 }}
+                stroke="url(#hc-stroke)"
+                strokeWidth={3}
+                fill="url(#hc-area)"
+                dot={{ fill: "#6366f1", stroke: "white", strokeWidth: 2, r: 4.5 }}
+                activeDot={{ r: 7, fill: "#6366f1", stroke: "white", strokeWidth: 3 }}
               />
             </AreaChart>
           </ResponsiveContainer>
