@@ -13,8 +13,6 @@ import {
   MessageCircleQuestion,
   ClipboardList,
 } from "lucide-react";
-import { AIAssistant } from "./AIAssistant";
-import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 
 const navigation = [
@@ -30,7 +28,6 @@ const navigation = [
 
 export function MainLayout() {
   const location = useLocation();
-  const [showAIAssistant, setShowAIAssistant] = useState(true);
   const { identity, logout } = useAuth();
   const displayName = identity?.name || identity?.email || "HR Admin";
   const initials = displayName
@@ -112,14 +109,6 @@ export function MainLayout() {
             </div>
 
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowAIAssistant(!showAIAssistant)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm"
-              >
-                <Sparkles className="w-4 h-4" />
-                AI Assistant
-              </button>
-
               <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -149,17 +138,8 @@ export function MainLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-hidden flex">
-          <div className="flex-1 overflow-y-auto p-6">
-            <Outlet />
-          </div>
-
-          {/* AI Assistant Panel */}
-          {showAIAssistant && (
-            <div className="w-96 bg-white border-l border-gray-200 overflow-hidden">
-              <AIAssistant />
-            </div>
-          )}
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
         </main>
       </div>
     </div>
