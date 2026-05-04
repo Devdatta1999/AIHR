@@ -10,6 +10,7 @@ import {
   Video,
   LogOut,
   Sparkles,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -48,6 +49,12 @@ const nav: (NavLeaf | NavGroup)[] = [
     name: "Payslips",
     icon: Receipt,
     path: "/employee/payslips",
+  },
+  {
+    kind: "leaf",
+    name: "Ask HR",
+    icon: MessageCircleQuestion,
+    path: "/employee/ask-hr",
   },
   {
     kind: "group",

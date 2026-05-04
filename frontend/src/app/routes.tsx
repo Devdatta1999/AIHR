@@ -18,6 +18,7 @@ import { EmployeeKits } from "./components/employee/EmployeeKits";
 import { EmployeeInterviews } from "./components/employee/EmployeeInterviews";
 import { EmployeeProjects } from "./components/employee/EmployeeProjects";
 import { EmployeePayslips } from "./components/employee/EmployeePayslips";
+import { EmployeeAskHR } from "./components/employee/EmployeeAskHR";
 import { Navigate } from "react-router";
 
 export const router = createBrowserRouter([
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
           { path: "onboarding", Component: EmployeeOnboarding },
           { path: "projects", Component: EmployeeProjects },
           { path: "payslips", Component: EmployeePayslips },
+          { path: "ask-hr", Component: EmployeeAskHR },
           {
             path: "interviews",
             children: [
