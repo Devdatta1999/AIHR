@@ -536,10 +536,10 @@ export function Dashboard() {
               {data.headcount_trend.at(-1)?.headcount || 0} active
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={280}>
             <AreaChart
               data={data.headcount_trend}
-              margin={{ top: 12, right: 16, left: 0, bottom: 0 }}
+              margin={{ top: 12, right: 24, left: 12, bottom: 28 }}
             >
               <defs>
                 <linearGradient id="hc-area" x1="0" y1="0" x2="0" y2="1">
@@ -563,13 +563,31 @@ export function Dashboard() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
+                label={{
+                  value: "Month",
+                  position: "insideBottom",
+                  offset: -16,
+                  style: { fill: "#6b7280", fontSize: 12, fontWeight: 500 },
+                }}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: "#9ca3af" }}
                 tickLine={false}
                 axisLine={false}
-                width={40}
+                width={56}
                 domain={["dataMin - 8", "dataMax + 8"]}
+                label={{
+                  value: "Active employees",
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 8,
+                  style: {
+                    fill: "#6b7280",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    textAnchor: "middle",
+                  },
+                }}
               />
               <Tooltip
                 content={<ChartTooltip />}
@@ -659,11 +677,11 @@ export function Dashboard() {
               No active candidates in the pipeline.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(200, data.hiring_funnel.length * 44)}>
+            <ResponsiveContainer width="100%" height={Math.max(220, data.hiring_funnel.length * 48 + 40)}>
               <BarChart
                 data={data.hiring_funnel}
                 layout="vertical"
-                margin={{ top: 4, right: 24, left: 0, bottom: 0 }}
+                margin={{ top: 4, right: 32, left: 8, bottom: 28 }}
               >
                 <defs>
                   <linearGradient id="bar-grad" x1="0" y1="0" x2="1" y2="0">
@@ -676,6 +694,12 @@ export function Dashboard() {
                   tick={{ fontSize: 11, fill: "#9ca3af" }}
                   axisLine={false}
                   tickLine={false}
+                  label={{
+                    value: "Candidates",
+                    position: "insideBottom",
+                    offset: -16,
+                    style: { fill: "#6b7280", fontSize: 12, fontWeight: 500 },
+                  }}
                 />
                 <YAxis
                   type="category"
@@ -683,7 +707,19 @@ export function Dashboard() {
                   tick={{ fontSize: 12, fill: "#374151" }}
                   axisLine={false}
                   tickLine={false}
-                  width={140}
+                  width={150}
+                  label={{
+                    value: "Pipeline stage",
+                    angle: -90,
+                    position: "insideLeft",
+                    offset: -2,
+                    style: {
+                      fill: "#6b7280",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      textAnchor: "middle",
+                    },
+                  }}
                 />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f9fafb" }} />
                 <Bar
