@@ -9,6 +9,7 @@ from routers import (
     analytics,
     auth,
     compensation,
+    dashboard,
     employee,
     hiring,
     hr_queries,
@@ -43,6 +44,7 @@ app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 app.include_router(team_formation.router, prefix="/team-formation", tags=["team-formation"])
 app.include_router(compensation.router, prefix="/compensation", tags=["compensation"])
 app.include_router(hr_queries.router, prefix="/hr-queries", tags=["hr-queries"])
+app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 
 
 @app.get("/health")
