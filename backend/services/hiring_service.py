@@ -281,13 +281,19 @@ def get_applicants_basic(applicant_ids: list[int]) -> list[dict[str, Any]]:
 
 def reject_remaining_applied(job_id: int) -> int:
     """After shortlisting, any applicant for this job still in Applied /
-    Under Review is moved to Rejected. Returns number rejected."""
+    Under Review **and that has a successful AI evaluation row** is moved
+    to Rejected. Candidates without an eval row (scoring failed transiently)
+    are left in Applied so the next shortlist run can re-score them — this
+    avoids silently rejecting a strong candidate because the LLM blipped."""
     sql = """
-        UPDATE applicants.applicants
+        UPDATE applicants.applicants a
         SET status = 'Rejected', updated_at = CURRENT_TIMESTAMP
-        WHERE job_id = %s
-          AND status IN ('Applied', 'Under Review')
-        RETURNING applicant_id
+        FROM applicants.applicant_ai_evaluations e
+        WHERE a.applicant_id = e.applicant_id
+          AND e.job_id = a.job_id
+          AND a.job_id = %s
+          AND a.status IN ('Applied', 'Under Review')
+        RETURNING a.applicant_id
     """
     with get_conn() as conn:
         rows = conn.execute(sql, (job_id,)).fetchall()

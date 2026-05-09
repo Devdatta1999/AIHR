@@ -71,23 +71,6 @@ export function MainLayout() {
             );
           })}
         </nav>
-
-        <div className="p-4 border-t border-gray-200">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-semibold text-blue-900">
-                AI Upgrade
-              </span>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">
-              Unlock advanced AI insights and automation
-            </p>
-            <button className="w-full bg-blue-600 text-white text-xs font-medium py-2 rounded-md hover:bg-blue-700 transition-colors">
-              Upgrade Plan
-            </button>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
